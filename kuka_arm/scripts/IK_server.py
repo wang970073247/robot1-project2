@@ -19,20 +19,23 @@ from sympy import *
 dtr = pi/180. 
 
 def rot_x(q):
+    '''Creates rotation matrix about X-axis'''
     R_x = Matrix([[1,      0,       0],
                   [0, cos(q), -sin(q)],
                   [0, sin(q), cos(q)]])
 
     return R_x
 
-def rot_y(q):              
+def rot_y(q):
+    '''Creates rotation matrix about Y-axis'''              
     R_y = Matrix([[ cos(q),        0,  sin(q)],
                   [      0,        1,       0],
                   [-sin(q),        0, cos(q)]])
     
     return R_y
 
-def rot_z(q):    
+def rot_z(q):
+    '''Creates rotation matrix about Z-axis'''    
     R_z = Matrix([[ cos(q),  -sin(q),       0],
                   [ sin(q),   cos(q),       0],
                   [      0,        0,       1]])
@@ -40,6 +43,7 @@ def rot_z(q):
     return R_z
 
 def create_matrix(alpha, a, d, q):
+    '''Creates homogeneous rotation matrix'''
     T = Matrix([[            cos(q),           -sin(q),           0,             a],
                 [ sin(q)*cos(alpha), cos(q)*cos(alpha), -sin(alpha), -sin(alpha)*d],
                 [ sin(q)*sin(alpha), cos(q)*sin(alpha),  cos(alpha),  cos(alpha)*d],
@@ -47,10 +51,12 @@ def create_matrix(alpha, a, d, q):
     return T
 
 def clip_angle(theta, lower, upper):
+    '''Set the limit value for the angle'''
     return np.clip(theta, radians(lower), radians(upper))
 
 
 def handle_calculate_IK(req):
+    '''This callback service method performs kinematic analysis and returns joint angles for the given list of end-effector pose and orientation'''
     rospy.loginfo("Received %s eef-poses from the plan" % len(req.poses))
     if len(req.poses) < 1:
         print "No valid poses received"
