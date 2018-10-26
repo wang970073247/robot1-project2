@@ -130,12 +130,12 @@ def handle_calculate_IK(req):
             theta1 = atan2(WC[1], WC[0])
             edge_a = 1.501 # Found by using "measure" tool in RViz.
             edge_b = sqrt(pow(temp1, 2) + pow(temp2, 2))
-            edge_c = 1.25 # Length of joint 1 to 2. (s[a2])
+            edge_c = 1.25 # Length of joint 2 to 3. (s[a2])
 
             angle_A = acos((edge_b*edge_b + edge_c*edge_c - edge_a*edge_a) / (2*edge_b*edge_c))
             angle_B = acos((edge_a*edge_a + edge_c*edge_c - edge_b*edge_b) / (2*edge_a*edge_c))
             theta2 = pi/2 - angle_A - atan2(temp2, temp1)
-            theta3 = pi/2 - angle_B + atan2(s[a3], s[d4])
+            theta3 = pi/2 - angle_B - atan2(-s[a3], s[d4])
 
             # Inverse Orientation
             R0_3 = T0_1[0:3,0:3] * T1_2[0:3,0:3] * T2_3[0:3,0:3]

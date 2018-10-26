@@ -35,6 +35,9 @@ The goal of this project is to write code to perform Forward and Inverse Kinemat
 [image24]: ./misc_images/test1.png
 [image25]: ./misc_images/test2.png
 [image26]: ./misc_images/test3.png
+[image27]: ./misc_images/ki1.jpg
+[image28]: ./misc_images/ki2.jpg
+[image29]: ./misc_images/ki3.jpg
 
 ---
 
@@ -232,62 +235,73 @@ The URDF model does not follow the DH convention, I used additional rotations - 
 ![alt text][image13]
 
 
-#### 3. Decouple Inverse Kinematics problem into Inverse Position Kinematics and inverse Orientation Kinematics; doing so derive the equations to calculate all individual joint angles.
+### Inverse Kinematics
 
-The last three joints of the robot are revolute and their joint axes intersect at a single point at `joint_5` - it's a **spherical wrist** with `joint_5` being its **wrist center**.
+Inverse kinematics is used to determine the joint angles necessary to get the end-effector in the desired position and orientation.
 
-I kinematically decoupled the IK problem into two steps: **Inverse Position** and **Inverse Orientation**.
+In the Kuka 210 Robotic arm, the last three joints are revolute joints such that the last three neighboring joint axes intersect at a single point. Such a design is called a **spherical wrist** and the common point of intersection is called the **wrist center**. 
 
-##### Inverse Position
-The goal of this step is to find the first 3 joint angles using the end effector's position in Cartesian coordinates. 
+The advantage of such a design is that it kinematically decouples the position and orientation of the end effector. Hence, it is possible to independently solve two simpler problems: first, the Cartesian coordinates of the wrist center, and then the composition of rotations to orient the end effector. The first three joints to control the position of the wrist center while the last three joints would orient the end effector as needed.
 
-The **spherical wrist** involving `joints 4,5,6`, the position of the **wrist center** is governed by the first three joints. I used the complete transformation matrix derived above to find the position of the **wrist center**:
+#### 1. Solution of Inverse Position
 
-![alt text][image14]
+**Derivation of Wrist Center**
 
-where Px, Py, Pz represent the position of end-effector w.r.t. base_link and d represents the displacement between **wrist center** and **gripper** along the z-axis, which is **dG** in the graph below and the values are defined in the URDF file.
+![Derivation of Wrist Center](images/wrist_center_derivation.jpg)
 
-Once I have the **wrist center** position, I used trigonometry to find the values for the first three joint angles. **theta1** is straightforward by looking from above to the robotic arm:
+ - In the above diagram, dG is obtained from the DH parameter table (i.e. URDF specification). 
+ - The wrist center is located at the center of joint 5.
+ - Px, Py, Pz are the target end effector (gripper) positions.
+ - Rrpy is a unit vector along the link from Wc to Gripper.
+ - Rrpy is obtained from the target roll, pitch & yaw angles. 
+ ```Rrpy = rot_z(yaw) * rot_y(pitch) * rot_x(roll) * R_corr.inv()```.
+ - However, R_corr inverse is same as R_corr as its symmetric. Thus 
+ ```Rrpy = rot_z(yaw) * rot_y(pitch) * rot_x(roll) * R_corr```
 
-![alt text][image15]
+**Derivation of first joint angle** :
 
-The following diagram depicts **theta2** and **theta3**:
+![alt text][image27]
 
-![alt text][image16]
+**Theta1**: 
 
-From the DH parameters I calculated the distance between each joint and then used Cosine Laws to calculate **theta2** and **theta3**.
+To find 𝜃1, we need to project the wrist center point, (WCx, WCy, WCz) onto the ground plane by setting Wcz = 0. Hence, ```theta1 = atan2(WCy, WCx)```
 
-##### Inverse Orientation
-The goal is to find the values of the final three joint angles.
+**Derivation of 2nd and 3rd joint angle** :
 
-Using the values of the first joint angles obtained above, I calculated **R0_3** via the application of homogeneous transformations up to the WC. Then I find the rotation matrix between joint 3 and joint 6:
+In the following diagram, the side view of the robot arm is depicted. The circled numbers represent the joints.
 
-![alt text][image17]
+![alt text][image28]
 
-where **R0_6** is the homogeneous RPY rotation matrix calculated above from the `base_link` to `gripper_link`. 
+**Theta2**: 
 
-**R3_6** is the rotation matrix of the extrinsic X-Y-Z rotation sequence account for the end gripper from the wrist center::
+From the above diagram, at joint 2, we can see that : ```theta2 = pi/2 - A - beta```
 
-![alt text][image18]
+From the triangle ABC, we can calculate angle ABC and Angle beta.
 
-where **R_XYZ** is **R3_6**, and **alpha**, **beta**, **gamma** is **theta4**, **theta5**, **theta6**.
 
-Here are the formulas I used to calculate the last three angles:
+**Theta3**:
 
-![alt text][image19]
+From the above diagram, at joint 3, we can see that: ```theta3 + B + alpha = pi/2 ```
 
-![alt text][image20]
+The same way, we can calculate Angle B and Angle alpha.
 
-![alt text][image21]
 
+#### 2. Solution of Inverse Orientation
+
+![alt text][image29]
+
+**Note** : The above formulae for theta 4,5 and 6 are in terms of the elements of R3_6, where the indices are 1-based. In python the indices will be 0-based.
+
+Thus,
+```
+theta4 = mpmath.atan2(R3_6[2,2] , -1*R3_6[0,2])
+theta5 = mpmath.atan2(mpmath.sqrt(R3_6[1,0]**2 + R3_6[1,1]**2) , R3_6[1,2])
+theta6 = mpmath.atan2(-1 * R3_6[1,1] , R3_6[1,0])
+```
 
 ### Project Implementation
 
-I implemented Forward Kinematics in lines 31 to 94 in `IK_server.py`, and Inverse Kinematics in lines 117 to 149.
-
-To speed up the Inverse Kinematics calulation, I pre-caluclated some values in the Cosine Laws formula for angle a and b. I've also limited the cos values to be between -1 and 1 to avoid complex numbers. I did this in lines 131 to 141. 
-
-In the inverse orientation step, I transposed the matrix **R3_6** instead of invert it. I did this because inverting a matrix is complex and can be numerically unstable, and I could do this because the rotation matrices are orthogonal and its tranpose is the same as its inverse.
+I implemented Forward Kinematics in lines 60 to 91 in `IK_server.py`, and Inverse Kinematics in lines 121 to 160.
 
 I've limited the angles to be under the limits indicated in the URDF file. 
 
@@ -304,3 +318,6 @@ Before doing the real implementation in `IK_server.py`, I tested my implementati
 ##### Test Case 3
 
 ![alt text][image26]
+
+
+### There is a video named robotvideo.mp4 in the folder shows how the robot work.
