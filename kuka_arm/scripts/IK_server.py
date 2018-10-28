@@ -148,15 +148,11 @@ def handle_calculate_IK(req):
             R0_3 = R0_3.evalf(subs={q1: theta1, q2: theta2, q3:theta3})
 
             R3_6 = R0_3.inv("LU")*R_EE
-            
-            theta5 = atan2(sqrt(R3_6[0,2]**2 + R3_6[2,2]**2), R3_6[1,2])
-            if (theta5 > pi) :
-                theta4 = atan2(-R3_6[2,2], R3_6[0,2])
-                theta6 = atan2(R3_6[1,1],-R3_6[1,0])
-            else:
-                theta4 = atan2(R3_6[2,2], -R3_6[0,2])
-                theta6 = atan2(-R3_6[1,1],R3_6[1,0])
 
+            theta4 = atan2(R3_6[2,2] , -1*R3_6[0,2])
+            theta5 = atan2(mpmath.sqrt(R3_6[1,0]**2 + R3_6[1,1]**2) , R3_6[1,2])
+            theta6 = atan2(-1 * R3_6[1,1] , R3_6[1,0])
+            
             # Angle limits
             theta1 = clip_angle(theta1, -185, 185)
             theta2 = clip_angle(theta2, -45, 85)

@@ -38,6 +38,10 @@ The goal of this project is to write code to perform Forward and Inverse Kinemat
 [image27]: ./misc_images/ki1.jpg
 [image28]: ./misc_images/ki2.jpg
 [image29]: ./misc_images/ki3.jpg
+[image30]: ./misc_images/28_1.png
+[image31]: ./misc_images/28_2.jpg
+[image32]: ./misc_images/pick.png
+
 
 ---
 
@@ -245,18 +249,6 @@ The advantage of such a design is that it kinematically decouples the position a
 
 #### 1. Solution of Inverse Position
 
-**Derivation of Wrist Center**
-
-![Derivation of Wrist Center](images/wrist_center_derivation.jpg)
-
- - In the above diagram, dG is obtained from the DH parameter table (i.e. URDF specification). 
- - The wrist center is located at the center of joint 5.
- - Px, Py, Pz are the target end effector (gripper) positions.
- - Rrpy is a unit vector along the link from Wc to Gripper.
- - Rrpy is obtained from the target roll, pitch & yaw angles. 
- ```Rrpy = rot_z(yaw) * rot_y(pitch) * rot_x(roll) * R_corr.inv()```.
- - However, R_corr inverse is same as R_corr as its symmetric. Thus 
- ```Rrpy = rot_z(yaw) * rot_y(pitch) * rot_x(roll) * R_corr```
 
 **Derivation of first joint angle** :
 
@@ -290,13 +282,23 @@ The same way, we can calculate Angle B and Angle alpha.
 
 ![alt text][image29]
 
-**Note** : The above formulae for theta 4,5 and 6 are in terms of the elements of R3_6, where the indices are 1-based. In python the indices will be 0-based.
+**Note** : The above formulae for theta 4,5 and 6 are in terms of the elements of R3_6, where the indices are 1-based. In python the indices will be 0-based. 
+
+**Note** : From the above picture, there are two cases for sloving the theta5, but the type of ambiguity is avoided by using the atan2 function.The syntax depends on the language or library used, but is often: atan2(y, x). (I get this from
+the lesson 12-8).Just as the picture shows below.
+![alt text][image30]
+
+**Note** :The way for solving theta5 doesn't affect theta4 and theta6, beacause:
+tan(theat4)=-(r33/r31)=sin(theat4)/cos(theat4)
+tan(theat6)=-(r22/r21)=sin(theat6)/cos(theat6)
+just as picture shows below
+![alt text][image31]
 
 Thus,
 ```
-theta4 = mpmath.atan2(R3_6[2,2] , -1*R3_6[0,2])
-theta5 = mpmath.atan2(mpmath.sqrt(R3_6[1,0]**2 + R3_6[1,1]**2) , R3_6[1,2])
-theta6 = mpmath.atan2(-1 * R3_6[1,1] , R3_6[1,0])
+theta4 = atan2(R3_6[2,2] , -1*R3_6[0,2])
+theta5 = atan2(mpmath.sqrt(R3_6[1,0]**2 + R3_6[1,1]**2) , R3_6[1,2])
+theta6 = atan2(-1 * R3_6[1,1] , R3_6[1,0])
 ```
 
 ### Project Implementation
@@ -320,4 +322,10 @@ Before doing the real implementation in `IK_server.py`, I tested my implementati
 ![alt text][image26]
 
 
-### There is a video named robotvideo.mp4 in the folder shows how the robot work.
+##### There is a video named robotvideo.mp4 in the folder shows how the robot work.
+
+### Results
+
+The code successfully picked and placed object **9 out of 10 cycles**
+![alt text][image32]
+
